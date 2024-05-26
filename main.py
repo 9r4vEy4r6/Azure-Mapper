@@ -40,51 +40,39 @@ def extract_data(subscription_id, resource_group_name) -> tuple[list, list]:
             location=resource.location
         ))
 
+    for resource in resource_list:
+        # Get role assignments for the resource
         if resource.identity:
-            nodes.append(AzureResource(
-                id=resource.identity.principal_id,
-                name=resource.identity.principal_id,
-                type="Service Principal",
-                location=resource.location,
-            ))
+            role_assignments = authorization_client.role_assignments.list_for_scope(
+                scope=f'/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}',
+                filter=f"assignedTo('{resource.identity.principal_id}')"
+            )
 
-            relationships.append(AzureRelationship(
-                source=resource.identity.principal_id,
-                target=resource.id,
-                relationship_type=ROLE.ASSIGNED_TO,
-            ))
+            for assignment in role_assignments:
+                nodes.append(AzureResource(
+                    id=assignment.principal_id,
+                    name=assignment.name,
+                    type=assignment.principal_type,
+                    location=resource.location,
+                ))
 
-    role_assignments = authorization_client.role_assignments.list_for_scope(
-        scope=f'/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}'
-    )
+                # print(assignment)
+                # break
 
-    for assignment in role_assignments:
-        print(assignment)
-        print("\n\n")
-        nodes.append(AzureResource(
-            id=assignment.principal_id,
-            name=assignment.name,
-            type=assignment.principal_type,
-            location=resource.location,
-        ))
+                relationships.append(AzureRelationship(
+                    source=assignment.principal_id,
+                    target=resource.id,
+                    relationship_type=ROLE.ASSIGNED_TO,
+                ))
 
-            # print(assignment)
-            # break
-
-            # relationships.append(AzureRelationship(
-            #     source=assignment.principal_id,
-            #     target=resource.id,
-            #     relationship_type=ROLE.ASSIGNED_TO,
-            # ))
-
-        relationships.append(AzureRelationship(
-            source=assignment.principal_id,
-            target=assignment.scope,
-            relationship_type=ROLE.HAS_ROLE,
-            extra_properties={
-                "role_definition_id": assignment.role_definition_id
-            }
-        ))
+                relationships.append(AzureRelationship(
+                    source=assignment.principal_id,
+                    target=assignment.scope,
+                    relationship_type=ROLE.HAS_ROLE,
+                    extra_properties={
+                        "role_definition_id": assignment.role_definition_id
+                    }
+                ))
 
     return nodes, relationships
 
