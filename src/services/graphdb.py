@@ -38,7 +38,7 @@ class AzureGraphDB(GraphDB):
     def check_node(self, id: str) -> bool:
         def _check_node(tx: ManagedTransaction, id: str) -> bool:
             result = tx.run(
-                "MATCH (n:NODE {id : $id}) RETURN n LIMIT 1", id=id)
+                "MATCH (n:RESOURCE {id : $id}) RETURN n LIMIT 1", id=id)
             result = result.single()
             return result != None
 
@@ -53,10 +53,10 @@ class AzureGraphDB(GraphDB):
 
         def _create_node(tx: ManagedTransaction, resource: AzureResource):
             result = tx.run(
-                "CREATE (n:NODE $resource) RETURN n", resource=resource.__dict__)
+                "CREATE (n:RESOURCE $resource) RETURN n", resource=resource.__dict__)
             # Check if node got created
             result = tx.run(
-                "MATCH (n:NODE {id : $id}) RETURN n LIMIT 1", id=resource.id)
+                "MATCH (n:RESOURCE {id : $id}) RETURN n LIMIT 1", id=resource.id)
             result = result.single()
             assert result != None
             return result
@@ -75,16 +75,16 @@ class AzureGraphDB(GraphDB):
 
             if relationship.relationship_type == ROLE.ASSIGNED_TO:
                 result = tx.run("""
-                        MATCH (nf:NODE {id : $source})
-                        MATCH (nt:NODE {id : $target})
-                        MERGE (nf)-[r:ASSIGNED_TO]->(nt)""",
-                                source=relationship.source, target=relationship.target)
+                    MATCH (nf:RESOURCE {id : $source})
+                    MATCH (nt:RESOURCE {id : $target})
+                    MERGE (nf)-[r:ASSIGNED_TO]->(nt)""",
+                            source=relationship.source, target=relationship.target)
             elif relationship.relationship_type == ROLE.HAS_ROLE:
                 result = tx.run("""
-                        MATCH (nf:NODE {id : $source})
-                        MATCH (nt:NODE {id : $target})
-                        MERGE (nf)-[r:HAS_ROLE {role_definition_id: $role_definition_id}]->(nt)""",
-                                source=relationship.source, target=relationship.target, role_definition_id=relationship.extra_properties["role_definition_id"])
+                    MATCH (nf:RESOURCE {id : $source})
+                    MATCH (nt:RESOURCE {id : $target})
+                    MERGE (nf)-[r:HAS_ROLE {role_definition_id: $role_definition_id}]->(nt)""",
+                            source=relationship.source, target=relationship.target, role_definition_id=relationship.extra_properties["role_definition_id"])
             print(
                 f"Created edge between {relationship.source} and {relationship.target}")
 
