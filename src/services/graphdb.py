@@ -48,7 +48,7 @@ class AzureGraphDB(GraphDB):
 
     def create_node(self, resource: AzureResource) -> None:
         if self.check_node(resource.id):
-            print(f"Node exists {resource.name}")
+            print(f"Node already exists : {resource.id}")
             return
 
         def _create_node(tx: ManagedTransaction, resource: AzureResource):
@@ -63,7 +63,7 @@ class AzureGraphDB(GraphDB):
 
         with self.driver.session() as session:
             result = session.write_transaction(_create_node, resource)
-            print(f"Created node {resource.name}")
+            print(f"Created node id : {resource.id}")
 
     def create_edge(self, relationship: AzureRelationship) -> None:
         def _create_edge(tx: ManagedTransaction, relationship: AzureRelationship):
