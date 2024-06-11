@@ -22,6 +22,20 @@ def extract_data(subscription_id, resource_group_name) -> tuple[list, list]:
     # Initialize AuthorizationManagementClient
     authorization_client = AuthorizationManagementClient(
         credential, subscription_id)
+    
+    # =========
+
+    role_assignments = authorization_client.role_assignments.list_for_scope(
+        scope=f'/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}',
+    )
+    role_assignments = list(role_assignments)
+
+    for assignment in role_assignments:
+        print("====================")
+        print(assignment)
+        print("====================")
+
+    # =========
 
     # Get all resources in the specified resource group
     resource_list = list(
@@ -39,8 +53,10 @@ def extract_data(subscription_id, resource_group_name) -> tuple[list, list]:
         ))
 
     for resource in resource_list:
-        # Get role assignments for the resource's system assigned managed identity
+        # Check for system assigned identities
         if resource.identity:
+            print(resource.identity.principal_id)
+            print(resource.identity)
             role_assignments = authorization_client.role_assignments.list_for_scope(
                 scope=f'/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}',
                 filter=f"assignedTo('{resource.identity.principal_id}')"
